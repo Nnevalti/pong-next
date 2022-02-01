@@ -1,0 +1,5 @@
+.canvas {
+	background-color: black;
+	border: 3px white solid;
+	box-sizing: border-box;
+}
