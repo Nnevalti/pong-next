@@ -1,52 +1,32 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import React from 'react'
+import { useEffect, useState } from 'react';
 
-// Desktop events listeners
+function useKeyPress(targetKey: string): boolean {
 
-const arrowKeys = {
-  up: 38,
-  down: 40,
-};
+	const [keyPressed, setKeyPressed] = useState(false);
 
-const arrowKeysReverse = {
-  38: "up",
-  40: "down",
-};
+	const downHandler = ({ key }): void => {
+		if (key === targetKey) {
+			setKeyPressed(true);
+		}
+	}
 
-export const useKeyPress = () => {
+	const upHandler = ({ key }): void => {
+		if (key === targetKey) {
+			setKeyPressed(false);
+	}
+	};
+	useEffect(() => {
+		window.addEventListener("keydown", downHandler);
+		window.addEventListener("keyup", upHandler);
 
-  const [keysPress, setKeysPress] = useState({
-    up: false,
-    down: false
-  });
+		return () => {
+			window.removeEventListener("keydown", downHandler);
+			window.removeEventListener("keyup", upHandler);
+		};
+	}, []);
 
-  const handleKeyDown = useCallback((e) => {
-    const { key, keyCode } = e; // a conditional for up
-    // onKeyDown event
-    setKeysDown((previousPressedKeys) => {
-      return { ...previousPressedKeys, [arrowKeysReverse[keyCode]]: true };
-    });
-  });
+	return keyPressed;
+}
 
-  const handleKeyUp = useCallback((e) => {
-    const { key, keyCode } = e;
-
-    // onKeyUp event
-    setKeysDown((previousPressedKeys) => {
-      return { ...previousPressedKeys, [arrowKeysReverse[keyCode]]: false };
-    });
-
-  });
-
-  useEffect(() => {
-	console.log(keyPress);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return function cleanup() {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
-  return keysPress;
-};
+export default useKeyPress;
