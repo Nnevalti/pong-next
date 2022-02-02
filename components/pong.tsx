@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 
 /* Personal Hooks */
 import { useWindowDimensions } from "../hooks/useWindowDimensions";
-import { useGameLogic } from "../hooks/useGameLogic";
 
 /* Personal components */
 import Canvas from "./Canvas"
@@ -12,14 +11,12 @@ import Canvas from "./Canvas"
 /* CSS */
 
 const Pong: React.FC<{}> = () => {
-	/* const { windowHeight, windowWidth } = useWindowDimensions(); */
+	const { windowHeight, windowWidth } = useWindowDimensions();
 
 	return (
 			<Canvas
-				/*width={windowWidth || 1000} */
-				/*height={windowHeight || 600} */
-				width={1000}
-				height={600}
+				canvasWidth={windowWidth || 1000}
+				canvasHeight={windowHeight || 600}
 			/>
 	)
 };

@@ -2,50 +2,41 @@ import React from "react";
 import styles from '../styles/Canvas.module.css'
 import { useState, useRef, useEffect } from 'react'
 
-import { useWindowDimensions } from "../hooks/useWindowDimensions";
-import { useGameLogic } from "../hooks/useGameLogic"
+import { useKeyPress } from "../hooks/useKeyPress";
+
+import { useRender } from "../hooks/useRender"
+import { useUpdate } from "../hooks/useUpdate"
+
+import { Draw, Player, Ball, Net } from "../class"
 
 const Canvas = (props) => {
 
 	const canvasRef = useRef(null);
-	const { width, height } = props
-
-	/* Neon effect */
-	let neonEffect = 0.01;
-	let firstNeon = 10;
-	let secondNeon = 20;
-	let neonColor = 0;
-	let colorChange = 1;
-
-	const animateNeon = canvas => {
-		canvas.style.boxShadow = "inset 0 0 5px #fff,\
-			inset 0 0 "+ firstNeon +"px rgb(127, 0, "+ neonColor +"),\
-			inset 0 0 "+ secondNeon +"px rgb(127, 0, "+ neonColor +"),\
-			0 0 5px #fff,\
-			0 0 "+ firstNeon +"px rgb(127, 0, "+ neonColor +")";
-		firstNeon += neonEffect;
-		secondNeon += neonEffect;
-		neonColor += colorChange;
-		if (firstNeon <= 10 || firstNeon >= 30)
-			neonEffect *= -1;
-		if (neonColor < 1 || neonColor > 254)
-			colorChange *= -1;
-	}
-	/* END NEON */
+	const { canvasWidth, canvasHeight } = props
 
 	useEffect(() => {
+		// Initialize Everything
 		const canvas = canvasRef.current;
 		const context = canvas.getContext('2d');
+		canvas.width = canvasWidth;
+		canvas.height = canvasHeight;
+
+		const draw = new Draw(canvas, canvas.width, canvas.height)
+		const net = new Net(canvas.width/100, (canvas.width/100) * 2, draw, canvas.width, canvas.height);
+		const player1 = new Player(canvas, 10, canvas.height /2, 4, 20, 120, draw);
+		const player2 = new Player(canvas, canvas.width - 30, canvas.height /2, 4, 20, 120, draw);
+		const ball = new Ball(canvas, canvas.width /2, canvas.height /2, 15, 4, 0.5, player1, player2, draw);
 
 		let animationFrameId;
 
-		const render = () => {
-			animateNeon(canvas);
-			useGameLogic(canvas, width, height);
-			animationFrameId = window.requestAnimationFrame(render);
+		const gameLoop = () => {
+			/* const key = useKeyPress; IT DOES NOT WORK*/
+			useUpdate(canvas, draw, net, player1, player2, ball);
+			useRender(canvas, draw, net, player1, player2, ball);
+			animationFrameId = window.requestAnimationFrame(gameLoop);
 		}
 
-		render()
+		gameLoop()
 
 		return () => {
 			window.cancelAnimationFrame(animationFrameId)

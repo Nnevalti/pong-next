@@ -21,12 +21,15 @@ export function useWindowDimensions() {
 		if (hasWindow) {
 			function handleResize() {
 				setWindowDimensions(getWindowDimensions());
+				console.log(windowDimensions)
 			}
 
 			window.addEventListener("resize", handleResize);
 			return () => window.removeEventListener("resize", handleResize);
 		}
 	}, [hasWindow]);
+	return [1000, 600]
+	return windowDimensions;
+	/* Hardcoded for now */
 
-  return windowDimensions;
 }
