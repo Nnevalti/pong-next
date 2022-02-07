@@ -28,8 +28,8 @@ export function useWindowDimensions() {
 			return () => window.removeEventListener("resize", handleResize);
 		}
 	}, [hasWindow]);
+	/* Hardcoded for now */
 	return [1000, 600]
 	return windowDimensions;
-	/* Hardcoded for now */
 
 }

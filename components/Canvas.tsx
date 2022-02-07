@@ -14,13 +14,11 @@ const Canvas = (props) => {
 	const canvasRef = useRef(null);
 	const { canvasWidth, canvasHeight } = props
 
-	const keyUp = useKeyPress('ArrowUp');
-	const keyDown = useKeyPress('ArrowDown');
 
 	const net = new Net(canvasWidth/100, (canvasWidth/100) * 2, canvasWidth, canvasHeight);
-	const player1 = new Player(canvasWidth, canvasHeight, 10, canvasHeight /2, 4, 20, 120);
-	const player2 = new Player(canvasWidth, canvasHeight, canvasWidth - 30, canvasHeight /2, 4, 20, 120);
-	const ball = new Ball(canvasWidth, canvasHeight, canvasWidth /2, canvasHeight /2, 15, 4, 0.5, player1, player2);
+	const player1 = new Player(canvasWidth, canvasHeight, 10, canvasHeight /2, 6, 20, 120);
+	const player2 = new Player(canvasWidth, canvasHeight, canvasWidth - 30, canvasHeight /2, 6, 20, 120);
+	const ball = new Ball(canvasWidth, canvasHeight, 15, 4, 0.5, player1, player2);
 
 	let neonEffect = 0.01;
 	let firstNeon = 10;
@@ -44,11 +42,33 @@ const Canvas = (props) => {
 			colorChange *= -1;
 	}
 
-	/*useEffect(() => {
-		player1.update(true, false);
-		player2.update(false, true);
-		console.log("keys in useEffect: ", keyUp, keyDown)
-	}, [keyUp, keyDown]) */
+	const keyUp = false;
+	const keyDown = false;
+
+	const upHandler = ({key}): void => {
+		if (key === "ArrowUp") {
+			keyUp = false;
+		}
+		if (key === "ArrowDown") {
+			keyDown = false;
+		}
+	}
+
+	const downHandler = ({ key }): void => {
+		if (key === "ArrowUp") {
+			keyUp = true;
+		}
+		if (key === "ArrowDown") {
+			keyDown = true;
+		}
+	};
+
+	let frameRate = 60; //Set the frame rate
+	let start = Date.now(); //Get the start time
+	let current = 0;
+	let elapsed = 0;
+	let frameDuration = 1000 / frameRate; //Set the frame duration in milliseconds
+	let lag = 0;
 
 	useEffect(() => {
 		// Initialize Everything
@@ -60,12 +80,22 @@ const Canvas = (props) => {
 		const draw = new Draw(canvas, canvas.width, canvas.height)
 
 		let animationFrameId;
+		window.addEventListener("keydown", downHandler);
+		window.addEventListener("keyup", upHandler);
 
 		const gameLoop = () => {
-			drawGame(draw, net, player1, player2, ball);
-			animateNeon(canvas);
-			ball.update();
-			/*console.log("keys in useEffect: ", keyUp, keyDown)*/
+			current = Date.now();
+		    elapsed = current - start;
+		    start = current;
+		    lag += elapsed;
+			while (lag >= frameDuration)
+		    {
+				drawGame(draw, net, player1, player2, ball);
+				animateNeon(canvas);
+				ball.update();
+				player1.update(keyUp, keyDown);
+				lag -= frameDuration;
+			}
 			animationFrameId = window.requestAnimationFrame(gameLoop);
 		}
 
@@ -73,12 +103,14 @@ const Canvas = (props) => {
 
 		return () => {
 			window.cancelAnimationFrame(animationFrameId)
+			window.removeEventListener("keydown", downHandler);
+			window.removeEventListener("keyup", upHandler);
 		}
 	}, []);
 
 	return (
 		<>
-			<canvas className={styles.canvas} ref={canvasRef} ></canvas>
+			<canvas className={styles.canvas} ref={canvasRef} onKeyPress={() => console.log("pressed")} ></canvas>
 		</>
 	);
 };

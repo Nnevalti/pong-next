@@ -6,25 +6,26 @@ export class Ball {
 	defaultSpeed: number;
 	acceleration: number;
 
-	constructor(canvasWidth, canvasHeight, x, y, r, speed, acceleration, p1, p2) {
+	constructor(canvasWidth, canvasHeight, r, speed, acceleration, p1, p2) {
 		this.canvasWidth = canvasWidth;
 		this.canvasHeight = canvasHeight;
-		this.x = x;
-		this.y = y;
+		this.x = canvasWidth/2;
+		this.y = canvasHeight/2;
 		this.r = r;
 		this.speed = speed;
 		this.defaultSpeed = speed;
 		this.acceleration = acceleration;
-		this.velocity = {dx: speed, dy: speed};
+		this.velocity = {dx: 0, dy: 0};
 		this.p1 = p1;
 		this.p2 = p2;
+		this.reset();
 	}
 
     // Collision between ball and Paddle
     collision() {
         if (this.x < this.canvasWidth/2)
         {
-            return (this.y > this.p1.y && this.y < this.p1.y + this.p1.height
+            return (this.y >= this.p1.y && this.y <= this.p1.y + this.p1.height
                     && this.x - this.r < this.p1.x + this.p1.width);
         }
         else
@@ -45,8 +46,8 @@ export class Ball {
         this.y = this.canvasHeight / 2;
         // resetting speed to default value
         this.speed = this.defaultSpeed;
-        this.velocity.dx = dir * (this.speed * angle1);
-        this.velocity.dy = this.speed * angle2;
+        this.velocity.dx = dir * (this.speed * Math.cos(angle1));
+        this.velocity.dy = this.speed * Math.sin(angle2);
     }
 
     update() {
@@ -72,14 +73,12 @@ export class Ball {
             // Where did the ball hit the Paddle
             var p = (this.x < this.canvasWidth/2) ? this.p1 : this.p2;
             let collidePoint = this.y - (p.y + p.height/2);
-            console.log(collidePoint);
             // Normalization (min = -1 and max = 1)
             collidePoint = collidePoint/(p.height/2);
-            console.log(collidePoint);
             // Caculate angle in Radian
             let angleRad = collidePoint * Math.PI/4
             let dir = (this.x < this.canvasWidth/2) ? 1 : -1;
-            this.velocity.dx = dir *( this.speed * Math.cos(angleRad));
+            this.velocity.dx = dir * (this.speed * Math.cos(angleRad));
             this.velocity.dy = this.speed * Math.sin(angleRad);
             this.speed += this.acceleration;
         }

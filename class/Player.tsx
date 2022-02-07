@@ -18,10 +18,7 @@ export class Player {
 	update(keyUp, keyDown) {
 		if(keyUp && !keyDown) {
 			if(this.y > 0)
-			{
 				this.y -= this.dy;
-				console.log("inUpdate", this.y)
-			}
 			else
 				this.y = 0;
 		}
