@@ -5,7 +5,7 @@ export class Player {
 	width: number;
 	height: number;
 
-	constructor(canvasWidth, canvasHeight, x, y, dy, width, height) {
+	constructor(canvasWidth, canvasHeight, x, y, dy, width, height, color) {
 		this.canvasWidth = canvasWidth;
 		this.canvasHeight = canvasHeight;
 		this.x = x;
