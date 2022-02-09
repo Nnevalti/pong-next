@@ -6,6 +6,6 @@ export function drawGame(canvas, draw, net, player1, player2, ball, score) {
 	draw.drawPaddle(player1);
 	draw.drawPaddle(player2);
 	draw.drawBall(ball);
-	draw.drawScore("0", "0", score)
+	draw.drawScore(score)
 	draw.animateNeon(canvas);
 }

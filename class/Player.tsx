@@ -5,7 +5,8 @@ export class Player {
 	width: number;
 	height: number;
 
-	constructor(canvasWidth, canvasHeight, x, y, dy, width, height, color) {
+	constructor(name, canvasWidth, canvasHeight, x, y, dy, width, height, color) {
+		this.name = name;
 		this.canvasWidth = canvasWidth;
 		this.canvasHeight = canvasHeight;
 		this.x = x;
@@ -13,6 +14,9 @@ export class Player {
 		this.dy = dy;
 		this.width = width;
 		this.height = height;
+		this.color = color;
+		this.step = 0;
+		this.timing = 15;
 	}
 
 	update(keyUp, keyDown) {

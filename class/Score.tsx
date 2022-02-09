@@ -13,6 +13,8 @@ export class Score
 		this.size = 45;
 		this.canvasWidth = canvasWidth;
 		this.canvasHeight = canvasHeight;
+		this.p1_Score = 0;
+		this.p2_Score = 0;
 	}
 
 

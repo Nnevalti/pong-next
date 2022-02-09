@@ -11,13 +11,16 @@ import { Draw, Player, Ball, Net, Score } from "../class"
 
 const Canvas = (props) => {
 
+	/*
+		Canvas ref and size
+	*/
 	const canvasRef = useRef(null);
 	const { canvasWidth, canvasHeight } = props
 
-	let keysArray = [];
-	let konamiCode = [ "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a" ];
-	let devMode = false;
-
+	/*
+		Game initialisation
+		Game Object
+	*/
 	let gameState = "waiting";
 	let frameRate = 60; //Set the frame rate
 	let start = Date.now(); //Get the start time
@@ -27,11 +30,22 @@ const Canvas = (props) => {
 	let lag = 0;
 
 	const net = new Net(canvasWidth/100, (canvasWidth/100) * 2, canvasWidth, canvasHeight);
-	const player1 = new Player(canvasWidth, canvasHeight, 10, canvasHeight /2, 6, 20, 120);
-	const player2 = new Player(canvasWidth, canvasHeight, canvasWidth - 30, canvasHeight /2, 6, 20, 120);
+	const player1 = new Player("Sans" ,canvasWidth, canvasHeight, 10, canvasHeight /2, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
+	const player2 = new Player("Papyrus" ,canvasWidth, canvasHeight, canvasWidth - 30, canvasHeight /2, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
 	const ball = new Ball(canvasWidth, canvasHeight, 15, 400, frameRate, 3*(canvasWidth/4), 10, player1, player2);
 	const score = new Score(canvasWidth, canvasHeight);
+	let playersGoal = {"1": false, "2": false}
+	/*
+		Variable used for dev mode
+		Register the 10 last keys pressed in keysArrays
+	*/
+	let keysArray = [];
+	let konamiCode = [ "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a" ];
+	let devMode = false;
 
+	/*
+		Handle key controls
+	*/
 	const keyUp = false;
 	const keyDown = false;
 
@@ -44,11 +58,14 @@ const Canvas = (props) => {
 		}
 	}
 
-	/* This is the debugging/developper function, maybe not let everything on production */
+	/*
+		This is the debugging/developper function, maybe not let everything on production
+		Extension of keyDownHandler
+	*/
 	const developperCheck = key => {
 		if (key === " ")
 		{
-			gameState = (gameState === "running") ? "paused" : "starting";
+			gameState = (gameState === "running") ? "paused" : "resume";
 			gameState === "paused" ? console.log("Game Paused") : console.log("Game Resumed");
 		}
 		if (key === "Escape")
@@ -131,7 +148,9 @@ const Canvas = (props) => {
 					second -= 1000;
 				}
 				i++;
-				ball.update();
+				playersGoal = ball.update(score)
+				if (playersGoal["1"] || playersGoal["2"])
+					gameState = "goal";
 				player1.update(keyUp, keyDown);
 				player2.update(keyUp, keyDown);
 				lag -= frameDuration;
@@ -148,20 +167,36 @@ const Canvas = (props) => {
 			second += elapsed;
 
 			drawGame(canvas, draw, net, player1, player2, ball, score);
+			/* Maybe use a switch and rename the gameState properly */
+			if (gameState === 'initializing') {
+				score.p1_Score = 0;
+				score.p1_Score = 0;
+				gameState = "starting";
+			}
 			if (gameState === "running" || gameState === "paused") {
 				if (gameState == "running")
 					gameRunning();
 				if (gameState === "paused"){
 					draw.drawPauseButton();
 				}
-			} else if (gameState === "starting") {
-				start = Date.now()
+			} else if (gameState === "resume") {
+				start = Date.now();
+				gameState = "running";
+			} else if (gameState === "starting" || gameState === "goal") {
+				start = Date.now();
 				if (second >= 3500)
 				{
-					start = Date.now()
+					start = Date.now();
+					ball.reset();
 					gameState = "running";
 					second -= 3500;
 				}
+				draw.drawRectangle(0, 0, canvasWidth, canvasHeight, "rgba(0, 0, 0, 0.5)");
+				if (gameState === "goal" && (score.p1_Score === 10 || score.p2_Score === 10)) {
+					draw.drawCenteredText("Someone Won !!!", this.canvas.width/2, ((this.canvas.height/2) - (this.canvas.height/10)), 45, 'white')
+				}
+				else if (gameState === "goal")
+					draw.drawGoal(ball, playersGoal, player1, player2);
 				draw.drawCountDown(Math.ceil((3 - (second/1000))));
 			} else if (gameState === "waiting") {
 				draw.drawLoading("Loading" + dot);

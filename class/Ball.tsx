@@ -17,11 +17,11 @@ export class Ball {
 		this.frameRate = frameRate;
 		this.defaultSpeed = speed;
 		this.defaultMaxSpeed = maxSpeed;
-		this.defaultAcceleration = acceleration;
+		this.speedPxS = speed;
 
+		this.acceleration = acceleration;
 		this.speed = speed / frameRate;
 		this.maxSpeed = maxSpeed / frameRate;
-		this.acceleration = acceleration / frameRate;
 
 		this.velocity = {dx: 0, dy: 0};
 		this.p1 = p1;
@@ -32,24 +32,26 @@ export class Ball {
 	// Collision between ball and Paddle
 	collision() {
 		if (this.x < this.canvasWidth/2) {
-			if (((this.x + this.velocity.dx) - this.r) <= this.p1.x + this.p1.width)
+			if (((this.x + this.velocity.dx) - this.r) < this.p1.x + this.p1.width)
 			{
 				if ((this.y + this.r >= this.p1.y && this.y + this.r <= this.p1.y + this.p1.height)
 				|| (this.y - this.r >= this.p1.y && this.y - this.r <= this.p1.y + this.p1.height))
 				{
 					this.x = (this.p1.x + this.p1.width) + this.r;
+					this.p1.color = "rgba(127, 0, 0, 0.8)";
 					this.r = 10;
 					return true;
 				}
 			}
 		}
 		else {
-			if (((this.x + this.velocity.dx) + this.r) >= this.p2.x)
+			if (((this.x + this.velocity.dx) + this.r) > this.p2.x)
 			 {
 				 if ((this.y + this.r >= this.p2.y && this.y + this.r <= this.p2.y + this.p2.height)
 				 || ( this.y - this.r >= this.p2.y && this.y - this.r <= this.p2.y + this.p2.height))
 				 {
 					 this.x = this.p2.x - this.r;
+					 this.p2.color = "rgba(127, 0, 0, 0.8)";
 					 this.r = 10;
 					 return true
 				 }
@@ -86,8 +88,11 @@ export class Ball {
 			let dir = (this.x < this.canvasWidth/2) ? 1 : -1;
 			this.velocity.dx = dir * (this.speed * Math.cos(angleRad));
 			this.velocity.dy = this.speed * Math.sin(angleRad);
-			if (this.speed + this.acceleration < this.maxSpeed)
-				this.speed += this.acceleration;
+			if (this.speedPxS + this.defaultAcceleration < this.defaultMaxSpeed)
+			{
+				ths.speedPxS += this.acceleration
+				this.speed += this.speedPxS / this.frameRate;
+			}
 			return true;
 		}
 		return false;
@@ -98,7 +103,6 @@ export class Ball {
 		this.frameRate = newFrameRate;
 		this.speed = this.defaultSpeed/this.frameRate;
 		this.maxSpeed = this.defaultMaxSpeed/this.frameRate;
-		this.acceleration = this.defaultAcceleration/this.frameRate;
 
 		// resetting speed to default value
 		let angle1 = this.velocity.dx / this.speed;
@@ -120,19 +124,28 @@ export class Ball {
     reset() {
         // Get old direction before replacing the ball
         let dir = (this.x < this.canvasWidth/2) ? 1 : -1;
+		// resetting speed to default value
+		this.speed = this.defaultSpeed/this.frameRate;
         // Caculating angle in degrees cos(angleRad) and sin(angleRad)
         let angle1 = this.velocity.dx / this.speed;
         let angle2 = this.velocity.dy / this.speed;
         // Replacing the ball in the center of the canvas
         this.x = this.canvasWidth /2;
         this.y = this.canvasHeight / 2;
-        // resetting speed to default value
-        this.speed = this.defaultSpeed/this.frameRate;
         this.velocity.dx = dir * (this.speed * Math.cos(angle1));
         this.velocity.dy = this.speed * Math.sin(angle2);
+
+		/* This reset the ball and send it striaght on the x axis*/
+		/*
+		let dir = (this.x < this.canvasWidth/2) ? 1 : -1;
+		this.x = this.canvasWidth / 2;
+		this.y = this.canvasHeight / 2;
+		this.velocity.dy = 0;
+		this.velocity.dx = dir * (this.defaultSpeed/this.frameRate);
+		*/
     }
 
-	update() {
+	update(score) {
 		if (this.r < 15)
 		{
 			this.r += 1;
@@ -150,14 +163,15 @@ export class Ball {
 		// Goal Player two
 		if(this.x - this.r <= 0)
 		{
-			/* P2_Score++; */
-			this.reset();
+			score.p2_Score++;
+			return {"1": false, "2": true};
 		}
 		//Goal player one
 		if(this.x + this.r >= this.canvasWidth)
 		{
-			/* P1_Score++; */
-			this.reset();
+			score.p1_Score++;
+			return {"1": true, "2": false};
 		}
+		return {"1": false, "2": false};
 	}
 }
