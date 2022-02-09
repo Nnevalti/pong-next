@@ -19,8 +19,8 @@ export class Ball {
 		this.defaultMaxSpeed = maxSpeed;
 		this.defaultAcceleration = acceleration;
 
-		this.speed = speed/frameRate;
-		this.maxSpeed = maxSpeed/frameRate;
+		this.speed = speed / frameRate;
+		this.maxSpeed = maxSpeed / frameRate;
 		this.acceleration = acceleration / frameRate;
 
 		this.velocity = {dx: 0, dy: 0};
@@ -87,10 +87,7 @@ export class Ball {
 			this.velocity.dx = dir * (this.speed * Math.cos(angleRad));
 			this.velocity.dy = this.speed * Math.sin(angleRad);
 			if (this.speed + this.acceleration < this.maxSpeed)
-			{
 				this.speed += this.acceleration;
-				this.acceleration += this.defaultAcceleration;
-			}
 			return true;
 		}
 		return false;
@@ -139,28 +136,28 @@ export class Ball {
 		if (this.r < 15)
 		{
 			this.r += 1;
-			console.log("Speed: ", this.speed, ", frameRate: ", this.frameRate, ", Speed*frameRate = ", (this.speed*this.frameRate), " ? ", this.defaultSpeed);
+			/*console.log("Speed: ", this.speed, ", frameRate: ", this.frameRate, ", Speed*frameRate = ", (this.speed*this.frameRate), " ? ", this.defaultSpeed);*/
 
 		}
+
+		//Collision with Players
 		if (!this.handleCollision())
 		{
 			this.x += this.velocity.dx;
 			this.y += this.velocity.dy;
 		}
 
-		//Collision with Players
-
-        // Goal Player two
-        if(this.x - this.r <= 0)
-        {
-            /* P2_Score++; */
-            this.reset();
-        }
-        //Goal player one
-        if(this.x + this.r >= this.canvasWidth)
-        {
-            /* P1_Score++; */
-            this.reset();
-        }
-    }
+		// Goal Player two
+		if(this.x - this.r <= 0)
+		{
+			/* P2_Score++; */
+			this.reset();
+		}
+		//Goal player one
+		if(this.x + this.r >= this.canvasWidth)
+		{
+			/* P1_Score++; */
+			this.reset();
+		}
+	}
 }

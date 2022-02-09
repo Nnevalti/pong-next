@@ -4,10 +4,10 @@ import { useState, useRef, useEffect } from 'react'
 
 import useKeyPress from "../hooks/useKeyPress";
 
-import { drawGame } from "../lib/drawGame"
+import { animateNeon, drawGame } from "../lib/drawGame"
 import { updateGame } from "../lib/updateGame"
 
-import { Draw, Player, Ball, Net } from "../class"
+import { Draw, Player, Ball, Net, Score } from "../class"
 
 const Canvas = (props) => {
 
@@ -16,11 +16,11 @@ const Canvas = (props) => {
 
 	let keysArray = [];
 	let konamiCode = [ "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a" ];
-	let modeDev = false;
+	let devMode = false;
 
 	let gameState = "waiting";
 	let frameRate = 60; //Set the frame rate
-	let start; //Get the start time
+	let start = Date.now(); //Get the start time
 	let current = 0;
 	let elapsed = 0;
 	let frameDuration = 1000 / frameRate; //Set the frame duration in milliseconds
@@ -29,29 +29,8 @@ const Canvas = (props) => {
 	const net = new Net(canvasWidth/100, (canvasWidth/100) * 2, canvasWidth, canvasHeight);
 	const player1 = new Player(canvasWidth, canvasHeight, 10, canvasHeight /2, 6, 20, 120);
 	const player2 = new Player(canvasWidth, canvasHeight, canvasWidth - 30, canvasHeight /2, 6, 20, 120);
-	const ball = new Ball(canvasWidth, canvasHeight, 15, 400, frameRate, 500, 10, player1, player2);
-
-	let neonEffect = 0.01;
-	let firstNeon = 10;
-	let secondNeon = 20;
-	let neonColor = 0;
-	let colorChange = 1;
-
-	/* Neon effect */
-	const animateNeon = canvas => {
-		canvas.style.boxShadow = "inset 0 0 2px #fff,\
-			inset 0 0 "+ firstNeon +"px rgb(127, 0, "+ neonColor +"),\
-			inset 0 0 "+ secondNeon +"px rgb(127, 0, "+ neonColor +"),\
-			0 0 5px #fff,\
-			0 0 "+ firstNeon +"px rgb(127, 0, "+ neonColor +")";
-		firstNeon += neonEffect;
-		secondNeon += neonEffect;
-		neonColor += colorChange;
-		if (firstNeon <= 10 || firstNeon >= 30)
-			neonEffect *= -1;
-		if (neonColor < 1 || neonColor > 254)
-			colorChange *= -1;
-	}
+	const ball = new Ball(canvasWidth, canvasHeight, 15, 400, frameRate, 3*(canvasWidth/4), 10, player1, player2);
+	const score = new Score(canvasWidth, canvasHeight);
 
 	const keyUp = false;
 	const keyDown = false;
@@ -65,13 +44,17 @@ const Canvas = (props) => {
 		}
 	}
 
+	/* This is the debugging/developper function, maybe not let everything on production */
 	const developperCheck = key => {
-		console.log(key)
-		if (key === "Escape" || key === " ")
+		if (key === " ")
 		{
-			gameState = "waiting";
-			if (key === "Escape")
-				ball.reset();
+			gameState = (gameState === "running") ? "paused" : "starting";
+			gameState === "paused" ? console.log("Game Paused") : console.log("Game Resumed");
+		}
+		if (key === "Escape")
+		{
+			gameState = "waiting"
+			ball.reset();
 		}
 		if (key === "+")
 		{
@@ -112,10 +95,11 @@ const Canvas = (props) => {
 			keysArray.shift();
 		keysArray.push(key);
 		if (keysArray.length === konamiCode.length && keysArray.every((value, index) => value === konamiCode[index])) {
-			modeDev = true;
+			devMode = true;
+			console.log("Konami Code entered :", konamiCode);
 			console.log("Developer mode activated");
 		}
-		if (modeDev === true)
+		if (devMode === true)
 			developperCheck(key);
 	};
 
@@ -131,43 +115,67 @@ const Canvas = (props) => {
 		let animationFrameId;
 		window.addEventListener("keydown", downHandler);
 		window.addEventListener("keyup", upHandler);
+
 		let i = 0;
 		let second = 0;
 
+		const gameRunning = () => {
+
+			lag += elapsed;
+			while (lag >= frameDuration)
+			{
+				if (second >= 1000)
+				{
+					/*console.log("i: ", i++);*/
+					i = 0;
+					second -= 1000;
+				}
+				i++;
+				ball.update();
+				player1.update(keyUp, keyDown);
+				player2.update(keyUp, keyDown);
+				lag -= frameDuration;
+			}
+		}
+
+		let dot = ".";
+
 		const gameLoop = () => {
 			animationFrameId = window.requestAnimationFrame(gameLoop);
-			if (gameState === "running") {
-				current = Date.now();
-				elapsed = current - start;
-				start = current;
-				lag += elapsed;
-				second+= elapsed;
-				while (lag >= frameDuration)
-				{
-					if (second >= 1000)
-					{
-						/*console.log("i: ", i++);*/
-						i = 0;
-						second -= 1000;
-					}
-					i++;
-					ball.update();
-					player1.update(keyUp, keyDown);
-					player2.update(keyUp, keyDown);
-					lag -= frameDuration;
+			current = Date.now();
+			elapsed = current - start;
+			start = current;
+			second += elapsed;
+
+			drawGame(canvas, draw, net, player1, player2, ball, score);
+			if (gameState === "running" || gameState === "paused") {
+				if (gameState == "running")
+					gameRunning();
+				if (gameState === "paused"){
+					draw.drawPauseButton();
 				}
 			} else if (gameState === "starting") {
 				start = Date.now()
-				gameState = "running";
+				if (second >= 3500)
+				{
+					start = Date.now()
+					gameState = "running";
+					second -= 3500;
+				}
+				draw.drawCountDown(Math.ceil((3 - (second/1000))));
 			} else if (gameState === "waiting") {
-
-
+				draw.drawLoading("Loading" + dot);
+				if (second >= 1000)
+				{
+					if (dot === "...")
+						dot = "";
+					dot += ".";
+					second -= 1000;
+				}
 			}
-			drawGame(draw, net, player1, player2, ball);
-			animateNeon(canvas);
 		}
 
-		gameLoop()
+		gameLoop();
 
 		return () => {
 			window.cancelAnimationFrame(animationFrameId)
