@@ -26,6 +26,8 @@ export class Ball {
 		this.velocity = {dx: 0, dy: 0};
 		this.p1 = p1;
 		this.p2 = p2;
+
+		this.goal = false;
 		this.reset();
 	}
 
@@ -123,7 +125,7 @@ export class Ball {
 
     reset() {
         // Get old direction before replacing the ball
-        let dir = (this.x < this.canvasWidth/2) ? 1 : -1;
+        /*let dir = (this.x < this.canvasWidth/2) ? 1 : -1;
 		// resetting speed to default value
 		this.speed = this.defaultSpeed/this.frameRate;
         // Caculating angle in degrees cos(angleRad) and sin(angleRad)
@@ -133,16 +135,14 @@ export class Ball {
         this.x = this.canvasWidth /2;
         this.y = this.canvasHeight / 2;
         this.velocity.dx = dir * (this.speed * Math.cos(angle1));
-        this.velocity.dy = this.speed * Math.sin(angle2);
+        this.velocity.dy = this.speed * Math.sin(angle2); */
 
 		/* This reset the ball and send it striaght on the x axis*/
-		/*
-		let dir = (this.x < this.canvasWidth/2) ? 1 : -1;
+		let dir = (this.x < this.canvasWidth/2) ? -1 : 1;
 		this.x = this.canvasWidth / 2;
 		this.y = this.canvasHeight / 2;
 		this.velocity.dy = 0;
 		this.velocity.dx = dir * (this.defaultSpeed/this.frameRate);
-		*/
     }
 
 	update(score) {
@@ -161,17 +161,20 @@ export class Ball {
 		}
 
 		// Goal Player two
-		if(this.x - this.r <= 0)
+		if(this.x - this.r <= 0 && this.goal === false)
 		{
 			score.p2_Score++;
+			this.goal = true;
 			return {"1": false, "2": true};
 		}
 		//Goal player one
-		if(this.x + this.r >= this.canvasWidth)
+		if(this.x + this.r >= this.canvasWidth && this.goal === false)
 		{
 			score.p1_Score++;
+			this.goal = true;
 			return {"1": true, "2": false};
 		}
+		this.goal = false;
 		return {"1": false, "2": false};
 	}
 }

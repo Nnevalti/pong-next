@@ -5,18 +5,24 @@ export class Player {
 	width: number;
 	height: number;
 
-	constructor(name, canvasWidth, canvasHeight, x, y, dy, width, height, color) {
+	constructor(name, canvasWidth, canvasHeight, x, dy, width, height, color) {
 		this.name = name;
 		this.canvasWidth = canvasWidth;
 		this.canvasHeight = canvasHeight;
-		this.x = x;
-		this.y = y - (height/2);
+		this.defaultX = x;
+		this.x = this.defaultX;
+		this.y = (canvasHeight/2) - (height/2);
 		this.dy = dy;
 		this.width = width;
 		this.height = height;
 		this.color = color;
 		this.step = 0;
 		this.timing = 15;
+	}
+
+	reset() {
+		this.x = this.defaultX;
+		this.y = (this.canvasHeight/2) - (this.height/2);
 	}
 
 	update(keyUp, keyDown) {

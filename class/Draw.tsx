@@ -144,8 +144,8 @@ export class Draw {
 				this.particles.push({
 					'x': ball.x,
 					'y': ball.y,
-					'dy': (5- 20 * Math.random()) * 1.5,
-					'dx': (5- 20 * Math.random()) * 1.5,
+					'dy': (5- (20 * Math.random()) * 1.5),
+					'dx': (5- (20 * Math.random()) * 1.5),
 					'r': (5 + 10 * Math.random())
 				})
 			}

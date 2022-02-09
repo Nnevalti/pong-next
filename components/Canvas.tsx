@@ -30,8 +30,8 @@ const Canvas = (props) => {
 	let lag = 0;
 
 	const net = new Net(canvasWidth/100, (canvasWidth/100) * 2, canvasWidth, canvasHeight);
-	const player1 = new Player("Sans" ,canvasWidth, canvasHeight, 10, canvasHeight /2, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
-	const player2 = new Player("Papyrus" ,canvasWidth, canvasHeight, canvasWidth - 30, canvasHeight /2, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
+	const player1 = new Player("Sans" ,canvasWidth, canvasHeight, 10, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
+	const player2 = new Player("Papyrus" ,canvasWidth, canvasHeight, canvasWidth - 30, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
 	const ball = new Ball(canvasWidth, canvasHeight, 15, 400, frameRate, 3*(canvasWidth/4), 10, player1, player2);
 	const score = new Score(canvasWidth, canvasHeight);
 	let playersGoal = {"1": false, "2": false}
@@ -104,8 +104,8 @@ const Canvas = (props) => {
 			keyDown = true;
 		}
 		if (key === "Enter") {
-			if (gameState === "waiting")
-				gameState = "starting";
+			if (gameState === "waiting" || gameState === "gameEnd")
+				gameState = "initializing";
 		}
 
 		if (keysArray.length === 10)
@@ -158,6 +158,7 @@ const Canvas = (props) => {
 		}
 
 		let dot = ".";
+		let display = 0;
 
 		const gameLoop = () => {
 			animationFrameId = window.requestAnimationFrame(gameLoop);
@@ -170,7 +171,7 @@ const Canvas = (props) => {
 			/* Maybe use a switch and rename the gameState properly */
 			if (gameState === 'initializing') {
 				score.p1_Score = 0;
-				score.p1_Score = 0;
+				score.p2_Score = 0;
 				gameState = "starting";
 			}
 			if (gameState === "running" || gameState === "paused") {
@@ -188,12 +189,14 @@ const Canvas = (props) => {
 				{
 					start = Date.now();
 					ball.reset();
+					player1.reset();
+					player2.reset();
 					gameState = "running";
 					second -= 3500;
 				}
 				draw.drawRectangle(0, 0, canvasWidth, canvasHeight, "rgba(0, 0, 0, 0.5)");
-				if (gameState === "goal" && (score.p1_Score === 10 || score.p2_Score === 10)) {
-					draw.drawCenteredText("Someone Won !!!", this.canvas.width/2, ((this.canvas.height/2) - (this.canvas.height/10)), 45, 'white')
+				if (gameState === "goal" && (score.p1_Score >= 3 || score.p2_Score >= 3)) {
+					gameState = "gameEnd"
 				}
 				else if (gameState === "goal")
 					draw.drawGoal(ball, playersGoal, player1, player2);
@@ -207,6 +210,21 @@ const Canvas = (props) => {
 					dot += ".";
 					second -= 1000;
 				}
+			} else if (gameState === "gameEnd") {
+				draw.drawGoalParticle(ball);
+				draw.drawRectangle(0, 0, canvasWidth, canvasHeight, "rgba(0, 0, 0, 0.2)");
+				if (second >= 1000)
+				{
+					if (display < 3)
+						display++;
+					second -= 1000;
+				}
+				if (display >= 1 && score.p1_Score >= 3)
+					draw.drawCenteredText((player1.name + " Won !!!"), canvasWidth/2, ((canvasHeight/2) - (canvasHeight/10)), 45, 'white')
+				else if (display >= 1 && score.p2_Score >= 3)
+					draw.drawCenteredText((player2.name + " Won !!!"), canvasWidth/2, ((canvasHeight/2) - (canvasHeight/10)), 45, 'white')
+				if (display >= 2)
+					draw.drawCenteredText("Press enter to rematch", canvasWidth/2, ((canvasHeight/2)), 45, 'white')
 			}
 		}
 
