@@ -12,12 +12,15 @@ export class Draw {
 		this.colorChange = 1;
 		this.degrees = 0;
 		this.particles = [];
-		this.particleInit = false;
+		this.max_particles = 75;
+
+		this.width = width;
+		this.height = height;
 	}
 
 	/* General Drawind functions*/
 	clear() {
-		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context.clearRect(0, 0, this.width, this.height);
 	}
 
 	drawRectangle(x: number, y: number, width: number, height: number, color: string) {
@@ -87,9 +90,15 @@ export class Draw {
 
 	drawNet(net)
 	{
-		for (let i = 0 ;i <= net.canvasHeight; i += (net.canvasWidth/100) * 3)
+		// 1080 / 20 = 54
+		// 1080 - 20*50 = 80
+		// 80 / 19 = 4
+		for (let i = 0 ;i <= (net.canvasHeight/2) - net.height; i += net.height)
 		{
-			this.drawRectangle(net.x, net.y + i, net.width, net.height, 'white');
+			net.y = i;
+			this.drawRectangle(net.x, net.y, net.width, net.height, 'white');
+			this.drawRectangle(net.x, net.canvasHeight - (net.height + net.y), net.width, net.height, 'white');
+			i += 19;
 		}
 	}
 
@@ -111,17 +120,17 @@ export class Draw {
 	}
 
 	drawPauseButton() {
-		let pauseSizeX = this.canvas.height/10;
-		let pauseSizeY = this.canvas.height/10;
-		this.drawRectangle(0, 0, this.canvas.width, this.canvas.height, "rgba(0, 0, 0, 0.1)")
-		this.drawRectangle(((this.canvas.width/2) - pauseSizeX/2), ((this.canvas.height/2) - pauseSizeY/2), pauseSizeX/3, pauseSizeY, 'white');
-		this.drawRectangle(((this.canvas.width/2) + pauseSizeX/6), ((this.canvas.height/2) - pauseSizeY/2), pauseSizeX/3, pauseSizeY, 'white');
+		let pauseSizeX = this.height/10;
+		let pauseSizeY = this.height/10;
+		this.drawRectangle(0, 0, this.width, this.height, "rgba(0, 0, 0, 0.1)")
+		this.drawRectangle(((this.width/2) - pauseSizeX/2), ((this.height/2) - pauseSizeY/2), pauseSizeX/3, pauseSizeY, 'white');
+		this.drawRectangle(((this.width/2) + pauseSizeX/6), ((this.height/2) - pauseSizeY/2), pauseSizeX/3, pauseSizeY, 'white');
 	}
 
 	drawLoading(loading) {
-		this.drawRectangle(0, 0, this.canvas.width, this.canvas.height, "rgba(0, 0, 0, 0.5)");
-		this.drawArc(this.canvas.width/2, this.canvas.height/2, this.canvas.height/4, "white", this.degrees);
-		this.drawCenteredText(loading, this.canvas.width/2, this.canvas.height/2, 45, "white");
+		this.drawRectangle(0, 0, this.width, this.height, "rgba(0, 0, 0, 0.5)");
+		this.drawArc(this.width/2, this.height/2, this.height/4, "white", this.degrees);
+		this.drawCenteredText(loading, this.width/2, this.height/2, 45, "white");
 		this.degrees += 6;
 		if (this.degrees === 360)
 			this.degrees = 0;
@@ -129,45 +138,47 @@ export class Draw {
 
 	drawCountDown(count) {
 		if (count === 0)
-		{
-			this.particles = [];
-			this.particleInit = false;
 			count = "GO !!!"
-		}
-		this.drawCenteredText(count, this.canvas.width/2, this.canvas.height/2, 45, "white");
+
+		this.drawCenteredText(count, this.width/2, this.height/2, 45, "white");
+	}
+	resetParticles() {
+		this.particles.splice(0, this.particles.length);
+		this.particles = [];
 	}
 
 	drawGoalParticle(ball) {
-		if (this.particleInit === false)
+		if (this.particles.length === 0)
 		{
-			for (let i = 0; i < 50; i++) {
+			console.log("new");
+			for (let i = 0; i < this.max_particles; i++) {
 				this.particles.push({
 					'x': ball.x,
 					'y': ball.y,
-					'dy': (5- (20 * Math.random()) * 1.5),
-					'dx': (5- (20 * Math.random()) * 1.5),
-					'r': (5 + 10 * Math.random())
+					'dy': ((Math.random() < 0.5 ? -1 : 1) * (5 + (50 * Math.random()))),
+					'dx': ((ball.x < this.width/2 ? 1 : -1) * (5 + (50 * Math.random()))),
+					'r': 2 + (15 * Math.random())
 				})
 			}
-			this.particleInit = true;
-		} else if (this.particleInit === true) {
-			for (let i = 0; i < 50; i++) {
+			ball.x = (ball.x < this.width/2) ? -ball.r : this.width + ball.r;
+		} else {
+			for (let i = 0; i < this.max_particles; i++) {
 				this.drawCircle(this.particles[i].x, this.particles[i].y, this.particles[i].r, 'white');
 				this.particles[i].x += this.particles[i].dx;
 				this.particles[i].y += this.particles[i].dy;
-				if (this.particles[i].x <= 0 || this.particles[i].x >= this.canvas.width )
+				if ((this.particles[i].x - this.particles[i].r) + this.particles[i].dx <= 0 || (this.particles[i].x + this.particles[i].r) + this.particles[i].dx >= this.width)
 					this.particles[i].dx = -this.particles[i].dx;
-				if (this.particles[i].y <= 0 || this.particles[i].y >= this.canvas.height )
+				if ((this.particles[i].y - this.particles[i].r) + this.particles[i].dy <= 0 || (this.particles[i].y + this.particles[i].r) + this.particles[i].dy >= this.height)
 					this.particles[i].dy = -this.particles[i].dy;
 			}
 		}
 	}
 
 	drawGoal(ball, playersGoal, p1, p2) {
-		if (playersGoal["1"])
-			this.drawCenteredText((p1.name + " Scores !!!"), this.canvas.width/2, ((this.canvas.height/2) - (this.canvas.height/10)), 45, 'white');
-		else if (playersGoal["2"])
-			this.drawCenteredText((p2.name + " Scores !!!"), this.canvas.width/2, ((this.canvas.height/2) - (this.canvas.height/10)), 45, 'white');
+		if (playersGoal.p1)
+			this.drawCenteredText((p1.name + " Scores !!!"), this.width/2, ((this.height/2) - (this.height/10)), 45, 'white');
+		if (playersGoal.p2)
+			this.drawCenteredText((p2.name + " Scores !!!"), this.width/2, ((this.height/2) - (this.height/10)), 45, 'white');
 		this.drawGoalParticle(ball);
 	}
 

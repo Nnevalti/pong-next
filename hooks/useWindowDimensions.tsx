@@ -4,8 +4,9 @@ export function useWindowDimensions() {
 	const hasWindow = typeof window !== "undefined";
 
 	function getWindowDimensions() {
-		const windowWidth = hasWindow ? window.innerWidth : null;
-		const windowHeight = hasWindow ? window.innerHeight : null;
+
+		const windowHeight = hasWindow ? window.innerHeight - 50 : null;
+		const windowWidth = ((16 * windowHeight) / 9);
 
 		return {
 			windowWidth,
@@ -28,8 +29,6 @@ export function useWindowDimensions() {
 			return () => window.removeEventListener("resize", handleResize);
 		}
 	}, [hasWindow]);
-	/* Hardcoded for now */
-	return [1000, 600]
-	return windowDimensions;
 
+	return windowDimensions;
 }

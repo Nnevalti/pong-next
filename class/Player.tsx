@@ -1,5 +1,5 @@
 export class Player {
-	x: nulber;
+	x: number;
 	y: number;
 	dy: number;
 	width: number;
@@ -25,17 +25,18 @@ export class Player {
 		this.y = (this.canvasHeight/2) - (this.height/2);
 	}
 
-	update(keyUp, keyDown) {
+	update(keyUp, keyDown, secondPassed) {
+		// console.log(this.dy * secondPassed);
 		if(keyUp && !keyDown) {
 			if(this.y > 0)
-				this.y -= this.dy;
+				this.y -= this.dy * secondPassed;
 			else
 				this.y = 0;
 		}
 
 		if(keyDown && !keyUp) {
 			if(this.y + this.height < this.canvasHeight)
-				this.y += this.dy;
+				this.y += this.dy * secondPassed;
 			else
 				this.y = this.canvasHeight - this.height;
 		}

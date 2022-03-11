@@ -1,47 +1,43 @@
 import React from "react";
-import styles from '../styles/Canvas.module.css'
-import { useState, useRef, useEffect } from 'react'
+import styles from '../styles/Canvas.module.css';
+import { useState, useRef, useEffect } from 'react';
 
 import useKeyPress from "../hooks/useKeyPress";
 
-import { animateNeon, drawGame } from "../lib/drawGame"
-import { updateGame } from "../lib/updateGame"
+import { animateNeon, drawGame } from "../lib/drawGame";
+import { updateGame, resetGame } from "../lib/updateGame";
+import { GameConstants, GameState, gameConstants } from "../constants/gameConstants"
+import { Draw, Player, Ball, Net, Score } from "../class";
 
-import { Draw, Player, Ball, Net, Score } from "../class"
-
-const Canvas = (props) => {
-
+const Canvas: React.FC<{}> = (props) => {
 	/*
 		Canvas ref and size
 	*/
-	const canvasRef = useRef(null);
-	const { canvasWidth, canvasHeight } = props
+	const canvasRef = useRef<HTMLCanvasElement>(null);
+	console.log(props);
+	const players = props.room.players;
+	const nbGoal = props.room.gameParam.nbGoal;
 
+	console.log(props);
 	/*
 		Game initialisation
 		Game Object
 	*/
-	let gameState = "waiting";
-	let frameRate = 60; //Set the frame rate
-	let start = Date.now(); //Get the start time
-	let current = 0;
-	let elapsed = 0;
-	let frameDuration = 1000 / frameRate; //Set the frame duration in milliseconds
-	let lag = 0;
+	let roomState = gameConstants.roomState;
 
-	const net = new Net(canvasWidth/100, (canvasWidth/100) * 2, canvasWidth, canvasHeight);
-	const player1 = new Player("Sans" ,canvasWidth, canvasHeight, 10, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
-	const player2 = new Player("Papyrus" ,canvasWidth, canvasHeight, canvasWidth - 30, 6, 20, 120, 'rgba(255, 255, 255, 0.8)');
-	const ball = new Ball(canvasWidth, canvasHeight, 15, 400, frameRate, 3*(canvasWidth/4), 10, player1, player2);
-	const score = new Score(canvasWidth, canvasHeight);
-	let playersGoal = {"1": false, "2": false}
-	/*
-		Variable used for dev mode
-		Register the 10 last keys pressed in keysArrays
-	*/
-	let keysArray = [];
-	let konamiCode = [ "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a" ];
-	let devMode = false;
+	let start = Date.now();
+	let oldTimestamp = 0;
+	let secondElapsed = 0;
+	let dot = 0;
+	let display = 0;
+	let seconds = 0;
+
+	const net = new Net(20, 50, gameConstants.canvasWidth, gameConstants.canvasHeight);
+	const player1 = new Player(players.p1, gameConstants.canvasWidth, gameConstants.canvasHeight, 10, 540, 30, 200, 'rgba(255, 255, 255, 0.8)');
+	const player2 = new Player(players.p2, gameConstants.canvasWidth, gameConstants.canvasHeight, (gameConstants.canvasWidth-40), 540, 30, 200, 'rgba(255, 255, 255, 0.8)');
+	const ball = new Ball(gameConstants.canvasWidth, gameConstants.canvasHeight, 25, 800, (gameConstants.canvasWidth/4) * 3, 50, player1, player2);
+	const score = new Score(gameConstants.canvasWidth, gameConstants.canvasHeight);
+
 
 	/*
 		Handle key controls
@@ -65,38 +61,18 @@ const Canvas = (props) => {
 	const developperCheck = key => {
 		if (key === " ")
 		{
-			gameState = (gameState === "running") ? "paused" : "resume";
-			gameState === "paused" ? console.log("Game Paused") : console.log("Game Resumed");
+			roomState = (roomState === GameState.PLAYING) ? GameState.PAUSED : GameState.RESUME;
+			roomState === GameState.PAUSED ? console.log("Game Paused") : console.log("Game Resumed");
 		}
 		if (key === "Escape")
 		{
-			gameState = "waiting"
+			roomState = GameState.QUEUE
 			ball.reset();
-		}
-		if (key === "+")
-		{
-			if (frameRate === 120)
-				return ;
-			frameRate++;
-			frameDuration = 1000 / frameRate;
-			ball.changeFrameRate(frameRate);
-			console.log("framerate: ", frameRate, ", in Ball: ", ball.frameRate);
-
-		}
-		if (key === "-")
-		{
-			if (frameRate === 1)
-				return ;
-			frameRate--;
-			ball.changeFrameRate(frameRate);
-			frameDuration = 1000 / frameRate;
-			console.log("framerate: ", frameRate, ", in Ball: ", ball.frameRate);
-
 		}
 	}
 
 	const downHandler = ({ key }): void => {
-
+		console.log(key)
 		if (key === "ArrowUp") {
 			keyUp = true;
 		}
@@ -104,19 +80,19 @@ const Canvas = (props) => {
 			keyDown = true;
 		}
 		if (key === "Enter") {
-			if (gameState === "waiting" || gameState === "gameEnd")
-				gameState = "initializing";
+			if (roomState === GameState.QUEUE || roomState === GameState.GOAL)
+				roomState = GameState.INIT;
 		}
 
-		if (keysArray.length === 10)
-			keysArray.shift();
-		keysArray.push(key);
-		if (keysArray.length === konamiCode.length && keysArray.every((value, index) => value === konamiCode[index])) {
-			devMode = true;
-			console.log("Konami Code entered :", konamiCode);
+		/* Dev mode part */
+		if (gameConstants.keysArray.length === 10)
+			gameConstants.keysArray.shift();
+		gameConstants.keysArray.push(key);
+		if (gameConstants.keysArray.length === gameConstants.konamiCode.length && gameConstants.keysArray.every((value, index) => value === gameConstants.konamiCode[index])) {
+			gameConstants.devMode = true;
 			console.log("Developer mode activated");
 		}
-		if (devMode === true)
+		if (gameConstants.devMode === true)
 			developperCheck(key);
 	};
 
@@ -124,114 +100,105 @@ const Canvas = (props) => {
 		// Initialize Everything
 		const canvas = canvasRef.current;
 		const context = canvas.getContext('2d');
-		canvas.width = canvasWidth;
-		canvas.height = canvasHeight;
 
-		const draw = new Draw(canvas, canvas.width, canvas.height)
+		canvas.width = gameConstants.canvasWidth;
+		canvas.height = gameConstants.canvasHeight;
+
+		const draw = new Draw(canvas, gameConstants.canvasWidth, gameConstants.canvasHeight)
 
 		let animationFrameId;
 		window.addEventListener("keydown", downHandler);
 		window.addEventListener("keyup", upHandler);
 
-		let i = 0;
-		let second = 0;
-
 		const gameRunning = () => {
+			ball.update(score, gameConstants, secondElapsed);
+			if (gameConstants.playerGoal.p1 || gameConstants.playerGoal.p2)
+				roomState = GameState.GOAL;
+			player1.update(keyUp, keyDown, secondElapsed);
+			player2.update(keyUp, keyDown, secondElapsed);
+		}
 
-			lag += elapsed;
-			while (lag >= frameDuration)
+		const loading = () => {
+			draw.drawLoading(gameConstants.loading[dot]);
+			if (seconds >= 1)
 			{
-				if (second >= 1000)
-				{
-					/*console.log("i: ", i++);*/
-					i = 0;
-					second -= 1000;
-				}
-				i++;
-				playersGoal = ball.update(score)
-				if (playersGoal["1"] || playersGoal["2"])
-					gameState = "goal";
-				player1.update(keyUp, keyDown);
-				player2.update(keyUp, keyDown);
-				lag -= frameDuration;
+				dot = (dot+1) % gameConstants.loading.length;
+				seconds = 0;
 			}
 		}
 
-		let dot = ".";
-		let display = 0;
+		const gameEnd = () => {
+			draw.drawGoalParticle(ball);
+			draw.drawRectangle(0, 0, gameConstants.canvasWidth, gameConstants.canvasHeight, "rgba(0, 0, 0, 0.2)");
+			seconds += secondElapsed;
+			if (seconds >= 1)
+			{
+				if (display < 3)
+					display++;
+				seconds -= 1;
+			}
+			if (display >= 1 && score.p1_Score >= 3)
+				draw.drawCenteredText((player1.name + " Won !!!"), gameConstants.canvasWidth/2, ((gameConstants.canvasHeight/2) - (gameConstants.canvasHeight/10)), 45, 'white');
+			else if (display >= 1 && score.p2_Score >= 3)
+				draw.drawCenteredText((player2.name + " Won !!!"), gameConstants.canvasWidth/2, ((gameConstants.canvasHeight/2) - (gameConstants.canvasHeight/10)), 45, 'white');
+			if (display >= 2)
+				draw.drawCenteredText("Match end", gameConstants.canvasWidth/2, ((gameConstants.canvasHeight/2)), 45, 'white');
+		}
 
-		const gameLoop = () => {
+		const gameLoop = (timestamp = 0) => {
 			animationFrameId = window.requestAnimationFrame(gameLoop);
-			current = Date.now();
-			elapsed = current - start;
-			start = current;
-			second += elapsed;
+			secondElapsed = (timestamp - oldTimestamp) / 1000;
+			oldTimestamp = timestamp;
 
 			drawGame(canvas, draw, net, player1, player2, ball, score);
-			/* Maybe use a switch and rename the gameState properly */
-			if (gameState === 'initializing') {
+			// draw.drawText("FPS: " + Math.round(1/secondElapsed), (gameConstants.canvasWidth - 150), 45, 45, "white");
+			/* Maybe use a switch and rename the roomState properly */
+			if (roomState === GameState.INIT) {
 				score.p1_Score = 0;
 				score.p2_Score = 0;
-				gameState = "starting";
+				roomState = GameState.STARTING;
 			}
-			if (gameState === "running" || gameState === "paused") {
-				if (gameState == "running")
+
+			if (roomState === GameState.PLAYING || roomState === GameState.PAUSED) {
+				if (roomState == GameState.PLAYING)
 					gameRunning();
-				if (gameState === "paused"){
+				if (roomState === GameState.PAUSED){
 					draw.drawPauseButton();
 				}
-			} else if (gameState === "resume") {
-				start = Date.now();
-				gameState = "running";
-			} else if (gameState === "starting" || gameState === "goal") {
-				start = Date.now();
-				if (second >= 3500)
-				{
-					start = Date.now();
-					ball.reset();
-					player1.reset();
-					player2.reset();
-					gameState = "running";
-					second -= 3500;
+			} else if (roomState === GameState.RESUME) {
+				oldTimestamp = Date.now();
+				roomState = GameState.PLAYING;
+			} else if (roomState === GameState.STARTING || roomState === GameState.GOAL) {
+				if (roomState === GameState.GOAL && (score.p1_Score >= nbGoal || score.p2_Score >= nbGoal)) {
+					roomState = GameState.END;
 				}
-				draw.drawRectangle(0, 0, canvasWidth, canvasHeight, "rgba(0, 0, 0, 0.5)");
-				if (gameState === "goal" && (score.p1_Score >= 3 || score.p2_Score >= 3)) {
-					gameState = "gameEnd"
+				else {
+					seconds += secondElapsed;
+					if (seconds >= 3.5)
+					{
+						seconds = 0;
+						draw.resetParticles();
+						resetGame(ball, player1, player2);
+						roomState = GameState.PLAYING;
+					}
+					draw.drawRectangle(0, 0, gameConstants.canvasWidth, gameConstants.canvasHeight, "rgba(0, 0, 0, 0.5)");
+					if (roomState === GameState.GOAL)
+						draw.drawGoal(ball, gameConstants.playerGoal, player1, player2);
+					draw.drawCountDown(Math.ceil(3 - seconds));
 				}
-				else if (gameState === "goal")
-					draw.drawGoal(ball, playersGoal, player1, player2);
-				draw.drawCountDown(Math.ceil((3 - (second/1000))));
-			} else if (gameState === "waiting") {
-				draw.drawLoading("Loading" + dot);
-				if (second >= 1000)
-				{
-					if (dot === "...")
-						dot = "";
-					dot += ".";
-					second -= 1000;
-				}
-			} else if (gameState === "gameEnd") {
-				draw.drawGoalParticle(ball);
-				draw.drawRectangle(0, 0, canvasWidth, canvasHeight, "rgba(0, 0, 0, 0.2)");
-				if (second >= 1000)
-				{
-					if (display < 3)
-						display++;
-					second -= 1000;
-				}
-				if (display >= 1 && score.p1_Score >= 3)
-					draw.drawCenteredText((player1.name + " Won !!!"), canvasWidth/2, ((canvasHeight/2) - (canvasHeight/10)), 45, 'white')
-				else if (display >= 1 && score.p2_Score >= 3)
-					draw.drawCenteredText((player2.name + " Won !!!"), canvasWidth/2, ((canvasHeight/2) - (canvasHeight/10)), 45, 'white')
-				if (display >= 2)
-					draw.drawCenteredText("Press enter to rematch", canvasWidth/2, ((canvasHeight/2)), 45, 'white')
+			} else if (roomState === GameState.QUEUE) {
+				seconds += secondElapsed;
+				// seconds += secondElapsed;
+				loading();
+			} else if (roomState === GameState.END) {
+				gameEnd();
 			}
 		}
 
 		gameLoop();
 
 		return () => {
-			window.cancelAnimationFrame(animationFrameId)
+			window.cancelAnimationFrame(animationFrameId);
 			window.removeEventListener("keydown", downHandler);
 			window.removeEventListener("keyup", upHandler);
 		}
